@@ -21,24 +21,43 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, 
     sound.playClick();
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-
-      const contentType = res.headers.get('content-type') || '';
+      let res: Response | null = null;
+      let contentType = '';
       let data: any = {};
-      if (contentType.includes('application/json')) {
+      let isSuccess = false;
+
+      // Try login with 1 automatic retry if server is cold starting
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          data = await res.json();
-        } catch {
-          data = {};
+          res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), password }),
+          });
+
+          contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            data = await res.json().catch(() => ({}));
+            isSuccess = true;
+            break;
+          } else {
+            console.warn(`Login attempt ${attempt}: server returned non-JSON response (HTTP ${res.status})`);
+            if (attempt === 1) {
+              await new Promise((resolve) => setTimeout(resolve, 1200));
+            }
+          }
+        } catch (fetchErr: any) {
+          console.warn(`Login attempt ${attempt} network error:`, fetchErr);
+          if (attempt === 1) {
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+          } else {
+            throw new Error('Tidak dapat terhubung ke server. Pastikan koneksi internet stabil.');
+          }
         }
-      } else {
-        const textResp = await res.text().catch(() => '');
-        console.error('Non-JSON server response:', textResp.slice(0, 150));
-        throw new Error('Server belum siap atau sedang memuat. Silakan muat ulang halaman dan coba lagi.');
+      }
+
+      if (!res || !isSuccess) {
+        throw new Error('Server sedang memulai atau memuat ulang. Silakan tunggu 2-3 detik dan klik Masuk kembali.');
       }
 
       if (!res.ok) {
