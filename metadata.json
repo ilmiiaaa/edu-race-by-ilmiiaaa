@@ -1,0 +1,6 @@
+{
+  "name": "Edu Race",
+  "description": "Platform kuis edukasi kompetitif real-time dengan visual balapan mobil 2D interaktif untuk siswa dan guru.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

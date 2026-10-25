@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Subjects collection: publicly readable for game info, writable by signed in teachers
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Question sets: readable by all, writeable by signed in teachers
+    match /questionSets/{questionSetId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+
+      match /questions/{questionId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+    }
+
+    // Games collection: readable by anyone with room code / game id, host can write, players can read
+    match /games/{gameId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() || (
+        // Allow player join updates or server-like state transitions if permitted
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'currentQuestionIndex'])
+      );
+      allow delete: if isSignedIn();
+
+      // Players in game
+      match /players/{playerId} {
+        allow read: if true;
+        allow create: if request.resource.data.displayName is string 
+                      && request.resource.data.displayName.size() >= 2 
+                      && request.resource.data.displayName.size() <= 30;
+        allow update: if true;
+        allow delete: if isSignedIn();
+      }
+
+      // Answers in game
+      match /answers/{answerId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if false;
+        allow delete: if isSignedIn();
+      }
+
+      // Results in game
+      match /results/{resultId} {
+        allow read: if true;
+        allow write: if isSignedIn() || true;
+      }
+    }
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Administrator or Teacher user account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin", "teacher"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Subject or academic field for question categorization",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name"]
+    },
+    "QuestionSet": {
+      "title": "QuestionSet",
+      "description": "Bundle/Package of questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 500 },
+        "subjectId": { "type": "string" },
+        "subjectName": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "questionCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "subjectId"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "Individual quiz question with options",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "questionSetId": { "type": "string" },
+        "questionText": { "type": "string", "maxLength": 1000 },
+        "questionType": { "type": "string", "enum": ["multiple_choice", "true_false"] },
+        "imageUrl": { "type": "string" },
+        "explanation": { "type": "string", "maxLength": 1000 },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "timeLimitSeconds": { "type": "number" },
+        "points": { "type": "number" },
+        "orderIndex": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "questionSetId", "questionText", "questionType"]
+    },
+    "Game": {
+      "title": "Game",
+      "description": "Racing quiz match room session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "hostId": { "type": "string" },
+        "questionSetId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "roomCode": { "type": "string", "pattern": "^[A-Z0-9]{6}$" },
+        "status": {
+          "type": "string",
+          "enum": ["DRAFT", "LOBBY", "COUNTDOWN", "QUESTION_ACTIVE", "QUESTION_RESULT", "PAUSED", "FINISHED", "CANCELLED"]
+        },
+        "currentQuestionIndex": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "finishedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "roomCode", "status", "title"]
+    },
+    "GamePlayer": {
+      "title": "GamePlayer",
+      "description": "Player session in a specific game room",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "displayName": { "type": "string", "maxLength": 30 },
+        "normalizedName": { "type": "string" },
+        "carColor": { "type": "string" },
+        "carModel": { "type": "string" },
+        "status": { "type": "string", "enum": ["waiting", "ready", "answering", "answered", "finished", "disconnected"] },
+        "totalScore": { "type": "number" },
+        "correctAnswers": { "type": "number" },
+        "wrongAnswers": { "type": "number" },
+        "unansweredCount": { "type": "number" },
+        "raceProgress": { "type": "number" },
+        "finishPosition": { "type": "number" },
+        "joinedAt": { "type": "string", "format": "date-time" },
+        "lastSeenAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "gameId", "displayName", "sessionId"]
+    },
+    "PlayerAnswer": {
+      "title": "PlayerAnswer",
+      "description": "Answer submitted by a player for a question",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameId": { "type": "string" },
+        "gamePlayerId": { "type": "string" },
+        "gameQuestionId": { "type": "string" },
+        "selectedOptionId": { "type": "string" },
+        "answerText": { "type": "string" },
+        "isCorrect": { "type": "boolean" },
+        "scoreAwarded": { "type": "number" },
+        "responseTimeMs": { "type": "number" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "gameId", "gamePlayerId", "gameQuestionId"]
+    },
+    "GameResult": {
+      "title": "GameResult",
+      "description": "Summary result record of a player after a completed game",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gameId": { "type": "string" },
+        "gamePlayerId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "carColor": { "type": "string" },
+        "finalScore": { "type": "number" },
+        "finalPosition": { "type": "number" },
+        "correctAnswers": { "type": "number" },
+        "wrongAnswers": { "type": "number" },
+        "unansweredCount": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "averageResponseTimeMs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "gameId", "gamePlayerId", "finalScore", "finalPosition"]
+    }
+  },
+  "firestore": {
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Collection of educational subjects"
+    },
+    "/questionSets/{questionSetId}": {
+      "schema": "QuestionSet",
+      "description": "Collection of quiz packages"
+    },
+    "/questionSets/{questionSetId}/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Questions belonging to a quiz set"
+    },
+    "/games/{gameId}": {
+      "schema": "Game",
+      "description": "Active and completed game sessions"
+    },
+    "/games/{gameId}/players/{playerId}": {
+      "schema": "GamePlayer",
+      "description": "Participants in a game session"
+    },
+    "/games/{gameId}/answers/{answerId}": {
+      "schema": "PlayerAnswer",
+      "description": "Answers submitted during game"
+    },
+    "/games/{gameId}/results/{resultId}": {
+      "schema": "GameResult",
+      "description": "Final standings and statistics"
+    }
+  }
+}
