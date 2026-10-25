@@ -59,9 +59,13 @@ export default function App() {
       headers: getAuthHeaders(),
       credentials: 'include',
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const ct = res.headers.get('content-type') || '';
+        return ct.includes('application/json') ? res.json() : null;
+      })
       .then((data) => {
-        if (data.authenticated && data.user) {
+        if (data?.authenticated && data?.user) {
           setAdminUser(data.user);
         }
       })

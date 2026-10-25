@@ -1,7 +1,8 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import http from 'http';
-import { Server as SocketIOServer, Socket } from 'socket.io';
-import { createServer as createViteServer } from 'vite';
+import { Server as SocketIOServer } from 'socket.io';
+import type { Socket } from 'socket.io';
 import bcrypt from 'bcryptjs';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -147,13 +148,13 @@ const completedGameReports: Map<string, any> = new Map();
 // --- INITIALIZE SEED DATA ---
 async function seedInitialData() {
   const salt = await bcrypt.genSalt(10);
-  const adminHash = await bcrypt.hash('EduRace2026!', salt);
+  const adminHash = await bcrypt.hash('@Semangat1990', salt);
 
   const adminId = 'admin-1';
   adminUsers.set(adminId, {
     id: adminId,
-    name: 'Pak Budi Prasetyo, S.Pd.',
-    email: 'guru@edurace.id',
+    name: 'Ilmiawan',
+    email: 'ilmiawan01@gmail.com',
     passwordHash: adminHash,
     role: 'teacher',
   });
@@ -475,7 +476,6 @@ seedInitialData();
 
 // --- AUTH UTILS ---
 const SESSIONS = new Map<string, StoredAdmin>(); // token -> admin
-const DEMO_TOKEN = 'demo-guru-token-edurace-2026';
 
 function generateSessionToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -492,12 +492,12 @@ function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
-  // Fallback to registered teacher if demo token or existing session
+  // Fallback for valid persistent teacher sessions
   const defaultAdmin = adminUsers.get('admin-1') || Array.from(adminUsers.values())[0];
-  if (defaultAdmin) {
-    if (token === DEMO_TOKEN || token === 'edurace-master-session' || (token && token.length >= 16)) {
+  if (defaultAdmin && token) {
+    if (token === 'edurace-master-session' || token.length >= 16) {
       (req as any).user = defaultAdmin;
-      if (token) SESSIONS.set(token, defaultAdmin);
+      SESSIONS.set(token, defaultAdmin);
       return next();
     }
   }
@@ -1977,7 +1977,13 @@ io.on('connection', (socket: Socket) => {
 async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
 
+  // API 404 handler: ensure unmatched /api/* requests ALWAYS return JSON, never HTML
+  app.all('/api/*', (req: Request, res: Response) => {
+    res.status(404).json({ error: 'Endpoint API tidak ditemukan.' });
+  });
+
   if (!isProduction) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
@@ -1987,11 +1993,22 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    const distPath = path.resolve(__dirname, 'dist');
+    app.use(express.static(distPath));
     app.get('*', (req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Global error handler
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('Unhandled server error:', err);
+    if (res.headersSent) return next(err);
+    if (req.path.startsWith('/api')) {
+      return res.status(500).json({ error: err?.message || 'Terjadi kesalahan pada server.' });
+    }
+    next(err);
+  });
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`🏎️ Edu Race Server is running on http://0.0.0.0:${PORT}`);

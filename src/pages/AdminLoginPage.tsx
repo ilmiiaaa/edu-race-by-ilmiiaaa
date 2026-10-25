@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, LogIn, AlertCircle, Sparkles, UserCheck } from 'lucide-react';
+import { Lock, Mail, LogIn, AlertCircle } from 'lucide-react';
 import { sound } from '../lib/audio';
 import { setAuthToken } from '../lib/auth';
 
@@ -27,9 +27,22 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, 
         body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+      } else {
+        const textResp = await res.text().catch(() => '');
+        console.error('Non-JSON server response:', textResp.slice(0, 150));
+        throw new Error('Server belum siap atau sedang memuat. Silakan muat ulang halaman dan coba lagi.');
+      }
+
       if (!res.ok) {
-        throw new Error(data.error || 'Login gagal.');
+        throw new Error(data.error || 'Email atau kata sandi tidak sesuai.');
       }
 
       if (data.token) {
@@ -43,12 +56,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, 
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillDemo = () => {
-    setEmail('guru@edurace.id');
-    setPassword('EduRace2026!');
-    sound.playClick();
   };
 
   return (
@@ -83,7 +90,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, 
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="guru@edurace.id"
+                  placeholder="ilmiawan01@gmail.com"
                   className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-sm font-medium text-white outline-none transition"
                   required
                 />
@@ -122,18 +129,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, 
               )}
             </button>
           </form>
-
-          {/* Quick Demo Fill Button */}
-          <div className="pt-2 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-semibold text-amber-300 flex items-center justify-center gap-1.5 transition"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Gunakan Akun Demo Guru (Pak Budi)</span>
-            </button>
-          </div>
         </div>
 
         <div className="text-center">
